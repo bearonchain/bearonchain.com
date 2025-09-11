@@ -12,7 +12,6 @@ import rehypeAutolinkHeadings from "rehype-autolink-headings";
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: "/bearonchain.com/",
   plugins: [react(), tailwindcss(), mdx({
         remarkPlugins: [ remarkGFM, remarkFrontmatter, remarkMdxFrontmatter],
         rehypePlugins: [
