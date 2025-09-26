@@ -11,7 +11,7 @@ import Post from "./pages/Post"; // Single blog post page
 import ContactForm from "./components/ContactForm";
 import FAQSection from "./components/FaqSection";
 import Footer from "./components/Footer";
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 
 
 // ✅ Layout wrapper that includes Navbar + FAQ + Footer everywhere
