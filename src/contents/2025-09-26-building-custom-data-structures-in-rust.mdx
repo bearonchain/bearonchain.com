@@ -90,8 +90,8 @@ pub fn get(&mut self, key: &i32) -> Option<&i32> {
 The put function handles both updating and inserting:
 	1.	If the key already exists → update its value and mark it MRU.
 	2.	If it’s a new key:
-	•	If cache is full, evict the least recently used (pop from back).
-	•	Insert new key-value pair and push to front.
+	-	If cache is full, evict the least recently used (pop from back).
+	-	Insert new key-value pair and push to front.
 
 ```rust
 pub fn put(&mut self, key: i32, value: i32) {
@@ -175,20 +175,20 @@ impl LruCache {
 ### What is a Bounded Queue?
 
 A bounded queue is a queue (FIFO) with a fixed capacity.
-	•	You push elements to the back.
-	•	You pop elements from the front.
-	•	If the queue is full, new pushes are either rejected or overwrite old items.
+	-	You push elements to the back.
+	-	You pop elements from the front.
+	-	If the queue is full, new pushes are either rejected or overwrite old items.
 
 In my design, I chose to reject new pushes by returning Err(value).
 
 Where it is used:
-	•	Message passing systems
-	•	Producer-consumer buffers
-	•	Rate limiting queues
+	-	Message passing systems
+	-	Producer-consumer buffers
+	-	Rate limiting queues
 
 ### Step 1: Designing the struct
-	•	A capacity field to track maximum size.
-	•	A `VecDeque<i32>` for storage, because it supports O(1) push/pop from both ends.
+	-	A capacity field to track maximum size.
+	-	A `VecDeque<i32>` for storage, because it supports O(1) push/pop from both ends.
 ```rust
 use std::collections::VecDeque;
 
@@ -213,8 +213,8 @@ impl BondedQueue {
 
 ### Step 3: The push function
     This function is for pushing the element in to the queue
-	•	If full → return Err(value).
-	•	Otherwise push to the back and return Ok(()).
+	-	If full → return Err(value).
+	-	Otherwise push to the back and return Ok(()).
 ```rust
 pub fn push(&mut self, value: i32) -> Result<(), i32> {
     if self.data.len() == self.capacity {
@@ -271,22 +271,22 @@ pub fn is_full(&self) -> bool {
 You can find the complete code with tests here: https://github.com/SKSudharsanan/LRU_and_BondedQueues
 
 ## Why I Chose HashMap and VecDeque
-	•	For the LRU Cache:
-	•	HashMap gives O(1) average lookups and insertions.
-	•	VecDeque makes it easy to pop from the back and push to the front.
-	•	Downside: updating recency (retain) is O(n).
-	•	For the Bounded Queue:
-	•	VecDeque is a natural fit for FIFO with O(1) push_back and pop_front.
+	-	For the LRU Cache:
+	-	HashMap gives O(1) average lookups and insertions.
+	-	VecDeque makes it easy to pop from the back and push to the front.
+	-	Downside: updating recency (retain) is O(n).
+	-	For the Bounded Queue:
+	-	VecDeque is a natural fit for FIFO with O(1) push_back and pop_front.
 
 
 ## How to Improve Further
-	•	LRU Cache:
+	-	LRU Cache:
 A production-grade implementation should use a doubly linked list + HashMap.
-	•	HashMap points to nodes in the list.
-	•	List nodes are moved to front in O(1).
-	•	Eviction pops tail in O(1).
-	•	This requires unsafe Rust for raw pointers.
-	•	Bounded Queue:
+	-	HashMap points to nodes in the list.
+	-	List nodes are moved to front in O(1).
+	-	Eviction pops tail in O(1).
+	-	This requires unsafe Rust for raw pointers.
+	-	Bounded Queue:
 Already O(1) for all operations. If desired, it can be extended into a circular buffer where new pushes overwrite old items.
 
 
