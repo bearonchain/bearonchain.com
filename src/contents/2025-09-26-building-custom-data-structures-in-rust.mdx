@@ -1,0 +1,301 @@
+---
+title: "Building Custom Data Structures in Rust: LRU Cache and Bounded Queue"
+date: 2025-09-26T00:00:00+0530
+categories: ["rust","data structures","interview"]
+image: /images/content/interview.png
+---
+# Building Custom Data Structures in Rust: LRU Cache and Bounded Queue
+
+Recently, I attended an interview for a freelance Rust trainer position.  
+I was asked to implement two fundamental data structures from scratch:  
+
+1. A **Least Recently Used (LRU) Cache**  
+2. A **Bounded Queue**  
+
+Instead of just sharing the final code, I’ll walk you through how I designed them, why I chose certain data structures, and what trade-offs I made.
+
+---
+
+## Part 1: Implementing an LRU Cache in Rust
+
+### What is an LRU Cache?
+
+An **LRU Cache** (Least Recently Used Cache) stores a fixed number of key-value pairs.  
+When the cache reaches capacity and a new item is inserted, it evicts the **least recently used** item.  
+This ensures the most frequently or recently accessed items stay in memory.
+
+**Where it is used:**
+- Web browsers (caching recently visited pages)  
+- Databases (query caches, page buffers)  
+- Operating systems (page replacement policies)  
+- API clients (memoizing results to avoid redundant calls)  
+
+---
+
+### Step 1: Designing the struct
+
+What do we need for an LRU Cache?
+
+- A **capacity** to define the maximum size.  
+- A **HashMap** for fast key-to-value lookups.  
+- A **VecDeque** to track usage order (front = most recent, back = least recent).  
+
+```rust
+use std::collections::{HashMap, VecDeque};
+
+pub struct LruCache {
+    capacity: usize,
+    storage: HashMap<i32, i32>,
+    order: VecDeque<i32>,
+}
+```
+
+### Step 2: The new function
+
+We start with a constructor.
+It checks that capacity > 0 and returns an empty cache.
+
+```rust
+impl LruCache {
+    pub fn new(capacity: usize) -> Self {
+        assert!(capacity > 0, "capacity should be greater than zero");
+        LruCache {
+            capacity,
+            storage: HashMap::new(),
+            order: VecDeque::new(),
+        }
+    }
+}
+```
+
+### Step 3: The get function
+
+The get function does two things:
+	1.	If the key exists, return the value.
+	2.	Update usage order → move the key to the front (marking it MRU).
+
+```rust
+pub fn get(&mut self, key: &i32) -> Option<&i32> {
+    if self.storage.contains_key(key) {
+        self.update_usage(key);
+        self.storage.get(key)
+    } else {
+        None
+    }
+}
+```
+
+### Step 4: The put function
+
+The put function handles both updating and inserting:
+	1.	If the key already exists → update its value and mark it MRU.
+	2.	If it’s a new key:
+	•	If cache is full, evict the least recently used (pop from back).
+	•	Insert new key-value pair and push to front.
+
+```rust
+pub fn put(&mut self, key: i32, value: i32) {
+    if self.storage.contains_key(&key) {
+        self.storage.insert(key, value);
+        self.update_usage(&key);
+    } else {
+        if self.storage.len() >= self.capacity {
+            if let Some(least_used_key) = self.order.pop_back() {
+                self.storage.remove(&least_used_key);
+            }
+        }
+        self.storage.insert(key, value);
+        self.order.push_front(key);
+    }
+}
+``` 
+### Step 5: Updating usage order
+
+This helper function removes a key from its old position and pushes it to the front.
+```rust
+fn update_usage(&mut self, key: &i32) {
+    self.order.retain(|existing_key| existing_key != key);
+    self.order.push_front(*key);
+}
+```
+
+### here, is the full LRU Implementation
+```rust
+use std::collections::{HashMap, VecDeque};
+
+pub struct LruCache {
+    capacity: usize,
+    storage: HashMap<i32, i32>,
+    order: VecDeque<i32>,
+}
+
+impl LruCache {
+    pub fn new(capacity: usize) -> Self {
+        assert!(capacity > 0, "capacity should be greater than zero");
+        LruCache {
+            capacity,
+            storage: HashMap::new(),
+            order: VecDeque::new(),
+        }
+    }
+
+    pub fn get(&mut self, key: &i32) -> Option<&i32> {
+        if self.storage.contains_key(key) {
+            self.update_usage(key);
+            self.storage.get(key)
+        } else {
+            None
+        }
+    }
+
+    pub fn put(&mut self, key: i32, value: i32) {
+        if self.storage.contains_key(&key) {
+            self.storage.insert(key, value);
+            self.update_usage(&key);
+        } else {
+            if self.storage.len() >= self.capacity {
+                if let Some(least_used_key) = self.order.pop_back() {
+                    self.storage.remove(&least_used_key);
+                }
+            }
+            self.storage.insert(key, value);
+            self.order.push_front(key);
+        }
+    }
+
+    fn update_usage(&mut self, key: &i32) {
+        self.order.retain(|existing_key| existing_key != key);
+        self.order.push_front(*key);
+    }
+}
+```
+
+## Part 2: Implementing a Bounded Queue in Rust
+
+### What is a Bounded Queue?
+
+A bounded queue is a queue (FIFO) with a fixed capacity.
+	•	You push elements to the back.
+	•	You pop elements from the front.
+	•	If the queue is full, new pushes are either rejected or overwrite old items.
+
+In my design, I chose to reject new pushes by returning Err(value).
+
+Where it is used:
+	•	Message passing systems
+	•	Producer-consumer buffers
+	•	Rate limiting queues
+
+### Step 1: Designing the struct
+	•	A capacity field to track maximum size.
+	•	A VecDeque<i32> for storage, because it supports O(1) push/pop from both ends.
+```rust
+use std::collections::VecDeque;
+
+pub struct BondedQueue {
+    capacity: usize,
+    data: VecDeque<i32>,
+}
+```
+
+### Step2: The new function for creating a new bonded queue
+```rust
+impl BondedQueue {
+    pub fn new(capacity: usize) -> Self {
+        assert!(capacity > 0, "capacity should be greater than zero");
+        BondedQueue {
+            capacity,
+            data: VecDeque::new(),
+        }
+    }
+}
+```
+
+### Step 3: The push function
+    This function is for pushing the element in to the queue
+	•	If full → return Err(value).
+	•	Otherwise push to the back and return Ok(()).
+```rust
+pub fn push(&mut self, value: i32) -> Result<(), i32> {
+    if self.data.len() == self.capacity {
+        Err(value)  // reject
+    } else {
+        self.data.push_back(value);
+        Ok(())
+    }
+}
+```
+if you look for the circular buffer style implementation of the bonding curve, then  the oldest element (front) is removed, and the new element is added.
+```rust
+pub fn push(&mut self, value: i32) {
+    if self.data.len() == self.capacity {
+        self.data.pop_front();  // drop the oldest
+    }
+    self.data.push_back(value);
+}
+```
+
+### Step 4: The pop function
+For bonded queues, we should remove the element from the front (FIFO).
+```rust
+pub fn pop(&mut self) -> Option<i32> {
+    self.data.pop_front()
+}
+```
+
+Step 5: The peek function
+
+Check the front without removing.
+```rust
+pub fn peek(&self) -> Option<&i32> {
+    self.data.front()
+}
+```
+
+Now, lets complete our implementation with few utility functions for finding the length of the queue, and to whether the queue is full or empty
+
+```rust
+pub fn len(&self) -> usize {
+    self.data.len()
+}
+
+pub fn is_empty(&self) -> bool {
+    self.data.is_empty()
+}
+
+pub fn is_full(&self) -> bool {
+    self.data.len() == self.capacity
+}
+```
+
+You can find the complete code with tests here: https://github.com/SKSudharsanan/LRU_and_BondedQueues
+
+## Why I Chose HashMap and VecDeque
+	•	For the LRU Cache:
+	•	HashMap gives O(1) average lookups and insertions.
+	•	VecDeque makes it easy to pop from the back and push to the front.
+	•	Downside: updating recency (retain) is O(n).
+	•	For the Bounded Queue:
+	•	VecDeque is a natural fit for FIFO with O(1) push_back and pop_front.
+
+
+## How to Improve Further
+	•	LRU Cache:
+A production-grade implementation should use a doubly linked list + HashMap.
+	•	HashMap points to nodes in the list.
+	•	List nodes are moved to front in O(1).
+	•	Eviction pops tail in O(1).
+	•	This requires unsafe Rust for raw pointers or using Rc<RefCell<Node>> for safe but slower pointer updates.
+	•	Bounded Queue:
+Already O(1) for all operations. If desired, it can be extended into a circular buffer where new pushes overwrite old items.
+
+
+## Final Thoughts
+
+Both of these exercises highlight the balance between writing safe, simple Rust using the standard library and designing optimized data structures where you may dip into unsafe for maximum efficiency.
+
+They’re also excellent warm-up interview questions for Rust developers because they test understanding of ownership, collections, and algorithmic trade-offs.
+
+That said, what frustrated me about the interview was being asked to code in an environment with no autocomplete, no terminal, and no suggestions. When the world is pushing toward AGI, we’re still being denied even the basic ability to look up syntax during interviews.
+
+I genuinely hope interviews and the world of recruitment evolve for the better. Despite a disappointing experience, I decided to write this blog for one reason only: to share a learning, even on the baddest of baddest days.
