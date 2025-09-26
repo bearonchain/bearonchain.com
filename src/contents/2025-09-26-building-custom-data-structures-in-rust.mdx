@@ -188,7 +188,7 @@ Where it is used:
 
 ### Step 1: Designing the struct
 	•	A capacity field to track maximum size.
-	•	A VecDeque<i32> for storage, because it supports O(1) push/pop from both ends.
+	•	A `VecDeque<i32>` for storage, because it supports O(1) push/pop from both ends.
 ```rust
 use std::collections::VecDeque;
 
@@ -285,7 +285,7 @@ A production-grade implementation should use a doubly linked list + HashMap.
 	•	HashMap points to nodes in the list.
 	•	List nodes are moved to front in O(1).
 	•	Eviction pops tail in O(1).
-	•	This requires unsafe Rust for raw pointers or using Rc<RefCell<Node>> for safe but slower pointer updates.
+	•	This requires unsafe Rust for raw pointers.
 	•	Bounded Queue:
 Already O(1) for all operations. If desired, it can be extended into a circular buffer where new pushes overwrite old items.
 
